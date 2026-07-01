@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+title: "The Misalignment of an Election: Replication Package"
+message: "If you use this repository, please cite the EUMAS 2026 paper and the Pabulib data sources."
+type: software
+authors:
+  - family-names: Briman
+    given-names: Eyal
+  - family-names: Talmon
+    given-names: Nimrod
+year: 2026
+preferred-citation:
+  type: conference-paper
+  title: "The Misalignment of an Election: Theoretical Foundations and Empirical Landscape"
+  authors:
+    - family-names: Briman
+      given-names: Eyal
+    - family-names: Talmon
+      given-names: Nimrod
+  conference:
+    name: "European Conference on Multi-Agent Systems"
+  year: 2026
