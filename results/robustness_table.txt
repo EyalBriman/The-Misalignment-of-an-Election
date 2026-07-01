@@ -1,0 +1,11 @@
+Correlation          | Borda    | Positional | Exponential | Max Delta
+----------------------------------------------------------------------
+egal_diversity       | +0.863   | +0.863     | +0.863      | 0.000
+egal_agreement       | -0.829   | -0.829     | -0.829      | 0.000
+egal_polarization    | -0.364   | -0.364     | -0.364      | 0.000
+util_diversity       | +0.634   | +0.559     | +0.535      | 0.098
+util_agreement       | -0.942   | -0.675     | -0.656      | 0.285
+util_polarization    | -0.061   | -0.136     | -0.115      | 0.075
+nash_diversity       | +0.738   | +0.613     | +0.634      | 0.126
+nash_agreement       | -0.910   | -0.836     | -0.942      | 0.106
+nash_polarization    | -0.219   | -0.136     | -0.061      | 0.157
