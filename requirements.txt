@@ -1,5 +1,12 @@
+# Core numerical/plotting dependencies
 numpy>=1.23
 scipy>=1.9
 matplotlib>=3.6
 scikit-learn>=1.2
 prefsampling>=0.1.24
+
+# Map-of-Elections / Mapel framework
+# The Journal---Drawing-a-Map-of-Elections repository requires Mapel >= 2.0.1.
+# The mapel meta-package installs the Mapel ecosystem, including mapel-elections.
+mapel>=2.0.1
+mapel-elections>=2.0.0
