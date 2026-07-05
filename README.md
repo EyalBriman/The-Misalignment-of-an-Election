@@ -1,13 +1,18 @@
 # The Misalignment of an Election: Replication Package
 
-This repository contains the empirical replication code for:
+This repository contains the empirical code and data for:
 
 > **The Misalignment of an Election: Theoretical Foundations and Empirical Landscape**  
 > Eyal Briman and Nimrod Talmon, EUMAS 2026.
 
-The pipeline reproduces the empirical part of the paper: synthetic elections, Krakow participatory-budgeting elections from Pabulib, the map-of-elections embedding, the three cardinal misalignment indices, robustness across cardinal lifts, and the worst-case-regret meta-rule.
+The experiments are represented in a Map-of-Elections style layout: each election is stored as an ordinal profile, pairwise positionwise distances are computed, two-dimensional coordinates are produced, and the map is colored by misalignment and ordinal features.
 
-The code is now organized around a Map-of-Elections/Mapel-compatible experiment layout. The original paper outputs are preserved, while the generated elections, distances, coordinates, and features are also exported to `experiments/misalignment/`.
+Related framework resources:
+
+- Drawing a Map of Elections code appendix: https://github.com/Project-PRAGMA/Journal---Drawing-a-Map-of-Elections
+- Mapof-Elections documentation: https://science-for-democracy.github.io/mapof-elections/
+- Mapof-Elections GitHub repository: https://github.com/science-for-democracy/mapof-elections
+- Mapel GitHub repository: https://github.com/szufix/mapel
 
 ## Repository structure
 
@@ -32,12 +37,35 @@ The code is now organized around a Map-of-Elections/Mapel-compatible experiment 
 │       ├── Poland_Krakow_2024.pb
 │       └── Poland_Krakow_2025.pb
 ├── experiments/
-│   └── misalignment/        # generated Map-of-Elections/Mapel-compatible experiment
+│   └── misalignment/        # generated map-of-elections experiment
 ├── figures/                 # generated paper figures
 └── results/                 # generated numeric summaries
 ```
 
-## What running the script produces
+## Installation
+
+Python 3.10 or newer is recommended.
+
+```bash
+python -m venv .venv
+
+# Linux/macOS
+source .venv/bin/activate
+
+# Windows Git Bash
+source .venv/Scripts/activate
+
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+On Windows PowerShell, activate with:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+## Reproducing the experiments
 
 From the repository root, run:
 
@@ -45,9 +73,11 @@ From the repository root, run:
 python scripts/run_experiments.py
 ```
 
-The script writes the same paper outputs as the standalone version:
+The script generates 283 synthetic elections and 8 Krakow participatory-budgeting elections, computes the positionwise map, computes the cardinal and ordinal features, and writes the figures and result files.
 
-| Paper artifact | Output file |
+## Main outputs
+
+| Artifact | Output file |
 |---|---|
 | Figure 1, three misalignment indices on the map of elections | `figures/figure1_misalignment_map.pdf` |
 | Figure 2, utilitarian misalignment vs. ordinal indices | `figures/figure2_util_vs_ordinal.pdf` |
@@ -56,7 +86,7 @@ The script writes the same paper outputs as the standalone version:
 | Numerical summaries | `results/numbers.json` |
 | Robustness table | `results/robustness_table.txt` |
 
-It also writes the Map-of-Elections/Mapel-compatible experiment files:
+The map-of-elections experiment is written to:
 
 ```text
 experiments/misalignment/
@@ -74,50 +104,25 @@ experiments/misalignment/
 └── matrices/
 ```
 
-The `results/mapel_framework_status.json` file records whether the optional live Mapel API stage was available in the local Python environment.
+## Method in brief
 
-## Installation
+The experiment uses:
 
-Python 3.10 or newer is recommended.
-
-```bash
-python -m venv .venv
-source .venv/bin/activate       # Windows Git Bash
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-On Windows PowerShell, activate with:
-
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-## What is preserved from the original script
-
-The following computations are intentionally unchanged:
-
-- synthetic population generation with seed 42;
-- Krakow Pabulib parsing and downsampling with seed 42;
-- Borda, positional, and exponential cardinal lifts;
-- egalitarian, utilitarian, and Nash misalignment;
-- diversity, agreement, and polarization descriptors;
+- 50 voters and 10 alternatives/projects per profile;
+- 283 synthetic profiles from IC, Mallows, urn, Euclidean, single-peaked, and group-separable cultures;
+- 8 Krakow participatory-budgeting profiles from Pabulib, downsampled reproducibly to 50 voters and 10 projects;
 - positionwise distance with Hungarian matching;
-- MDS map used for the paper figures;
-- correlation/robustness analysis;
-- worst-case-regret meta-rule.
-
-The Mapel-compatible files are exported from these same objects, so the framework data and the paper figures refer to the same elections, distances, coordinates, and feature values.
+- MDS coordinates for the two-dimensional map;
+- Borda utilities for the main misalignment values;
+- positional and exponential utilities for robustness checks;
+- diversity, agreement, and polarization as ordinal descriptors;
+- a worst-case-regret meta-rule over the egalitarian, utilitarian, and Nash objectives.
 
 ## Data
 
 The eight real participatory-budgeting instances in `data/krakow_pb/` are Krakow municipal PB files from **Pabulib**. They are downsampled reproducibly to 50 voters and 10 projects. See `data/README.md` and `DATA_LICENSE.md` for source and licensing notes.
 
 When using the Pabulib data, cite the Pabulib data/tools paper and the Pabulib format/library paper listed in `CITATION.bib`.
-
-## Notes
-
-The live Mapel API is optional at runtime. The script always exports the Map-of-Elections-compatible folder structure. If Mapel is installed, it additionally tries to build the corresponding online Mapel experiment object and records the result in `results/mapel_framework_status.json`. This keeps the replication robust while preserving the exact paper outputs.
 
 ## License
 

@@ -48,8 +48,8 @@ FIG_DIR = ROOT / "figures"
 RESULTS_DIR = ROOT / "results"
 
 # Mapel/Map-of-Elections framework output.
-# The original paper figures/results are still written to figures/ and results/.
-# The Mapel experiment is written to experiments/misalignment/.
+# Paper figures/results are written to figures/ and results/.
+# The Mapel-style experiment is written to experiments/misalignment/.
 MAPEL_EXPERIMENT_ID = "misalignment"
 MAPEL_ROOT = ROOT / "experiments"
 MAPEL_EXPERIMENT_DIR = MAPEL_ROOT / MAPEL_EXPERIMENT_ID
@@ -372,7 +372,7 @@ def compute_mds_embedding(profiles: List[Dict[str, object]]) -> np.ndarray:
 
 
 def compute_positionwise_distance_matrix(profiles: List[Dict[str, object]]) -> np.ndarray:
-    """Distance matrix used for the map, using exactly the original metric."""
+    """Distance matrix used for the map, using the paper positionwise metric."""
     P_mats = [position_matrix(d["ranks"]) for d in profiles]
     n = len(P_mats)
     D = np.zeros((n, n))
@@ -457,8 +457,8 @@ def export_mapel_offline_files(
           features/misalignment.csv
           features/ordinal_indices.csv
 
-    The original figures and JSON files do not read from these files, so their
-    content stays byte-for-byte governed by the original computations.
+    The figure and JSON outputs and the experiment files are all derived from
+    the same generated profiles, distances, coordinates, and features.
     """
     elections_dir = out_dir / "elections"
     distances_dir = out_dir / "distances"
@@ -571,8 +571,8 @@ def make_mapel_vote_generator(rankings: np.ndarray) -> Callable[..., np.ndarray]
     return generator
 
 
-def mapel_distance_from_original_metric(election_1, election_2) -> Tuple[float, object]:
-    """Custom Mapel distance matching the metric used in the paper script."""
+def mapel_positionwise_distance(election_1, election_2) -> Tuple[float, object]:
+    """Custom Mapel distance matching the positionwise metric used in the paper."""
     votes_1 = np.asarray(election_1.votes, dtype=int)
     votes_2 = np.asarray(election_2.votes, dtype=int)
     dist = positionwise_distance(position_matrix(votes_1), position_matrix(votes_2))
@@ -597,16 +597,13 @@ def build_mapel_framework_experiment(
 ) -> Dict[str, object]:
     """Build the actual Mapel experiment object.
 
-    This is the part that makes the pipeline use the Map-of-Elections framework,
-    instead of only writing a standalone matplotlib/sklearn pipeline.  We use
-    Mapel's online experiment object, add each generated profile as a fixed
-    custom culture, register the exact positionwise distance as a custom Mapel
-    distance, and register the misalignment indices as Mapel features.
+    The function builds a Mapel online ordinal experiment, adds each generated
+    profile as a fixed custom culture, registers the positionwise distance as a
+    custom Mapel distance, and registers the Borda-based misalignment indices as
+    Mapel features.
 
-    The coordinates used for the paper figures are then injected from the
-    original sklearn MDS computation.  This is deliberate: it preserves the
-    paper outputs exactly, while still exposing the elections/distances/features
-    through Mapel.
+    Coordinates are supplied from the deterministic MDS stage so that the
+    figure files and the exported experiment use the same two-dimensional map.
     """
     import mapel.elections as mapel
 
@@ -624,11 +621,10 @@ def build_mapel_framework_experiment(
             num_voters=votes.shape[0],
         )
 
-    experiment.add_distance("misalignment-positionwise", mapel_distance_from_original_metric)
+    experiment.add_distance("misalignment-positionwise", mapel_positionwise_distance)
     experiment.compute_distances(distance_id="misalignment-positionwise")
 
-    # Register features in the framework.  These are the same feature values
-    # used by the paper figures/results.
+    # Register the Borda-misalignment features used for the map colorings.
     register_mapel_feature(experiment, "mu_egal_borda", borda_utilities, "egal")
     register_mapel_feature(experiment, "mu_util_borda", borda_utilities, "util")
     register_mapel_feature(experiment, "mu_nash_borda", borda_utilities, "nash")
@@ -636,9 +632,7 @@ def build_mapel_framework_experiment(
     experiment.compute_feature(feature_id="mu_util_borda")
     experiment.compute_feature(feature_id="mu_nash_borda")
 
-    # Keep the original coordinates exactly.  Mapel has embedding_id='mds', but
-    # using a new embedding implementation could rotate/scale or otherwise change
-    # Figure 1/Figure 4.  Injecting coordinates keeps the outputs identical.
+    # Use the deterministic coordinates written to coordinates/mds.csv.
     experiment.coordinates = {eid: [float(embed[i, 0]), float(embed[i, 1])] for i, eid in enumerate(ids)}
 
     # Sanity check that the Mapel custom distance agrees with the stored matrix.
@@ -659,12 +653,12 @@ def build_mapel_framework_experiment(
         "num_elections": len(ids),
         "distance_id": "misalignment-positionwise",
         "features": ["mu_egal_borda", "mu_util_borda", "mu_nash_borda"],
-        "max_distance_error_vs_original_matrix": float(max_distance_error),
+        "max_distance_error_vs_stored_matrix": float(max_distance_error),
     }
 
 
 def run_mapel_framework_stage(profiles: List[Dict[str, object]], embed: np.ndarray) -> None:
-    """Prepare the Mapel experiment without changing the original outputs."""
+    """Write the map-of-elections experiment files and run the Mapel package stage."""
     dist = compute_positionwise_distance_matrix(profiles)
     ids = export_mapel_offline_files(profiles, embed, dist)
 

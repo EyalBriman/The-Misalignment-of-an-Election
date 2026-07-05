@@ -1,27 +1,6 @@
 # Validation
 
-This repository is set up so that the framework-aligned script preserves the original paper outputs.
-
-## What is checked
-
-The script writes the original outputs first:
-
-```text
-figures/figure1_misalignment_map.pdf
-figures/figure2_util_vs_ordinal.pdf
-figures/figure3_lift_robustness.pdf
-figures/figure4_wcr_meta_rule.pdf
-results/numbers.json
-results/robustness_table.txt
-```
-
-It then writes the Map-of-Elections/Mapel-compatible experiment folder:
-
-```text
-experiments/misalignment/
-```
-
-The framework export is derived from the same in-memory profiles, distance matrix, MDS coordinates, and feature values used by the paper figures.
+Use this file to check that a local run created all expected figures, numeric summaries, and map-of-elections experiment files.
 
 ## Quick local check
 
@@ -70,12 +49,14 @@ print('Validation passed.')
 PY
 ```
 
-## Notes about Mapel availability
+## Expected counts
 
-`requirements.txt` includes `mapel` and `mapel-elections`. If they are installed, the script also attempts to construct a live Mapel experiment object and records the result in:
+A successful run creates:
 
-```text
-results/mapel_framework_status.json
-```
+- 291 `.soc` elections in `experiments/misalignment/elections/`;
+- 291 data rows in `experiments/misalignment/summary.csv`;
+- 291 data rows in each feature CSV;
+- four figure PDFs in `figures/`;
+- `results/numbers.json` and `results/robustness_table.txt`.
 
-If the local Mapel API is unavailable, the offline Mapel-compatible experiment files are still produced. This avoids breaking the replication because of package/API differences outside the paper code.
+`results/mapel_framework_status.json` records whether the package-level Mapel stage was available in the local environment.

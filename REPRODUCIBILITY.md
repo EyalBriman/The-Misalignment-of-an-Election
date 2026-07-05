@@ -8,7 +8,7 @@ From the repository root:
 python scripts/run_experiments.py
 ```
 
-This regenerates the paper figures, the result summaries, and the Map-of-Elections/Mapel-compatible experiment folder.
+This regenerates the figures, numeric summaries, and the map-of-elections experiment folder.
 
 ## Random seeds
 
@@ -18,7 +18,7 @@ All random choices are fixed by seed 42.
 - Pabulib voter downsampling: `PABULIB_SEED = 42`
 - MDS embedding: `random_state = 42`
 
-The MDS call also fixes `n_init=4` and `init="random"` to avoid silent changes across newer `scikit-learn` defaults.
+The MDS call fixes `n_init=4` and `init="random"` so that the coordinates do not depend on newer `scikit-learn` defaults.
 
 ## Synthetic population
 
@@ -52,17 +52,11 @@ Each Krakow file is downsampled to:
 - 10 projects;
 - seed 42.
 
-The exact sampled voter indices and selected project IDs are written to:
-
-```text
-results/numbers.json
-```
-
-under `pabulib_sampling`.
+The exact sampled voter indices and selected project IDs are written to `results/numbers.json` under `pabulib_sampling`.
 
 ## Cardinal lifts
 
-The robustness analysis uses the three lifts described in the paper:
+The robustness analysis uses three cardinal lifts:
 
 - Borda: `(m - 1 - rank) / (m - 1)`
 - positional: `1 / (rank + 1)`
@@ -72,7 +66,7 @@ Ranks are zero-indexed in the code.
 
 ## Output files
 
-The paper outputs are:
+The figure and result outputs are:
 
 ```text
 figures/figure1_misalignment_map.pdf
@@ -83,7 +77,7 @@ results/numbers.json
 results/robustness_table.txt
 ```
 
-The framework-aligned outputs are:
+The map-of-elections experiment files are:
 
 ```text
 experiments/misalignment/map.csv
