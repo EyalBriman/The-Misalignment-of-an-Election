@@ -46,10 +46,19 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data" / "krakow_pb"
 FIG_DIR = ROOT / "figures"
 RESULTS_DIR = ROOT / "results"
-MAPEL_DIR = ROOT / "mapel" / "misalignment"
+
+# Mapel/Map-of-Elections framework output.
+# The original paper figures/results are still written to figures/ and results/.
+# The Mapel experiment is written to experiments/misalignment/.
+MAPEL_EXPERIMENT_ID = "misalignment"
+MAPEL_ROOT = ROOT / "experiments"
+MAPEL_EXPERIMENT_DIR = MAPEL_ROOT / MAPEL_EXPERIMENT_ID
+USE_MAPEL_FRAMEWORK = True
+REQUIRE_MAPEL = True
+
 FIG_DIR.mkdir(exist_ok=True)
 RESULTS_DIR.mkdir(exist_ok=True)
-MAPEL_DIR.mkdir(parents=True, exist_ok=True)
+MAPEL_EXPERIMENT_DIR.mkdir(parents=True, exist_ok=True)
 
 N_VOTERS = 50
 N_ALTS = 10
@@ -355,23 +364,34 @@ def compute_mds_embedding(profiles: List[Dict[str, object]]) -> np.ndarray:
         return MDS(n_components=2, dissimilarity="precomputed", random_state=GLOBAL_SEED).fit_transform(D)
 
 
+def compute_positionwise_distance_matrix(profiles: List[Dict[str, object]]) -> np.ndarray:
+    """Distance matrix used for the map, using exactly the original metric."""
+    P_mats = [position_matrix(d["ranks"]) for d in profiles]
+    n = len(P_mats)
+    D = np.zeros((n, n))
+    for i in range(n):
+        for j in range(i + 1, n):
+            D[i, j] = D[j, i] = positionwise_distance(P_mats[i], P_mats[j])
+    return D
+
+
 # ---------------------------------------------------------------------------
-# Map-of-elections framework export
+# Mapel / Map-of-Elections framework integration
 # ---------------------------------------------------------------------------
 
 def safe_id(text: str) -> str:
-    """Create a filesystem-safe election id."""
+    """Create a stable id that is safe as a file name and Mapel election id."""
     text = str(text).replace("=", "-").replace(" ", "_")
     return re.sub(r"[^A-Za-z0-9_.-]+", "_", text).strip("_")
 
 
 def election_id(index: int, profile: Dict[str, object]) -> str:
-    """Stable id used in all MapEl-style output files."""
+    """Election id used both in Mapel and in the exported files."""
     return f"{index:03d}_{safe_id(str(profile['culture']))}"
 
 
 def rankings_to_vote_counts(rankings: np.ndarray) -> Dict[Tuple[int, ...], int]:
-    """Compress rankings into vote multiplicities, as in .soc files."""
+    """Compress identical rankings into multiplicities for .soc files."""
     counts: Dict[Tuple[int, ...], int] = {}
     for row in np.asarray(rankings, dtype=int):
         vote = tuple(int(x) for x in row)
@@ -380,7 +400,12 @@ def rankings_to_vote_counts(rankings: np.ndarray) -> Dict[Tuple[int, ...], int]:
 
 
 def write_soc_file(path: Path, rankings: np.ndarray, title: str) -> None:
-    """Write one election in a PrefLib/MapEl-readable strict-order .soc format."""
+    """Write strict ordinal votes in a PrefLib-style .soc file.
+
+    Mapel's offline experiments store ordinal elections in the elections/ folder
+    as .soc files.  We use 0-based candidate ids, matching the arrays used by
+    the computations below.
+    """
     rankings = np.asarray(rankings, dtype=int)
     n, m = rankings.shape
     counts = rankings_to_vote_counts(rankings)
@@ -398,46 +423,67 @@ def write_soc_file(path: Path, rankings: np.ndarray, title: str) -> None:
             f.write(f"{count}: " + ",".join(str(a) for a in vote) + "\n")
 
 
-def compute_positionwise_distance_matrix(profiles: List[Dict[str, object]]) -> np.ndarray:
-    """Distance matrix used by the map: positionwise distance with Hungarian matching."""
-    p_mats = [position_matrix(d["ranks"]) for d in profiles]
-    n = len(p_mats)
-    dist = np.zeros((n, n))
-    for i in range(n):
-        for j in range(i + 1, n):
-            dist[i, j] = dist[j, i] = positionwise_distance(p_mats[i], p_mats[j])
-    return dist
+def write_square_csv(path: Path, ids: List[str], matrix: np.ndarray) -> None:
+    """Write a labelled square matrix."""
+    with path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["election_id"] + ids)
+        for eid, row in zip(ids, matrix):
+            writer.writerow([eid] + [f"{float(x):.12g}" for x in row])
 
 
-def export_map_of_elections_files(
+def export_mapel_offline_files(
     profiles: List[Dict[str, object]],
     embed: np.ndarray,
-    out_dir: Path = MAPEL_DIR,
-) -> None:
-    """Export the experiment in the style of the Map of Elections pipeline.
+    dist: np.ndarray,
+    out_dir: Path = MAPEL_EXPERIMENT_DIR,
+) -> List[str]:
+    """Write the Mapel offline-experiment folders and files.
 
-    This does not change the experiment. It only writes the generated elections,
-    the positionwise distance matrix, the 2D coordinates, and the feature values
-    used for coloring the map.
+    This is the persistent framework object that can be committed to GitHub:
+
+        experiments/misalignment/
+          map.csv
+          elections/*.soc
+          distances/positionwise.csv
+          coordinates/mds.csv
+          features/misalignment.csv
+          features/ordinal_indices.csv
+
+    The original figures and JSON files do not read from these files, so their
+    content stays byte-for-byte governed by the original computations.
     """
     elections_dir = out_dir / "elections"
-    features_dir = out_dir / "features"
     distances_dir = out_dir / "distances"
     coordinates_dir = out_dir / "coordinates"
-    for directory in [elections_dir, features_dir, distances_dir, coordinates_dir]:
+    features_dir = out_dir / "features"
+    matrices_dir = out_dir / "matrices"
+    for directory in [elections_dir, distances_dir, coordinates_dir, features_dir, matrices_dir]:
         directory.mkdir(parents=True, exist_ok=True)
 
     ids = [election_id(i, d) for i, d in enumerate(profiles)]
 
+    # Mapel control file.  We set one row per already materialized election.
+    # The .soc files below are the source of truth for the exact votes.
+    with (out_dir / "map.csv").open("w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f, delimiter=";")
+        writer.writerow([
+            "size", "num_candidates", "num_voters", "culture_id", "params",
+            "color", "alpha", "marker", "label", "family_id", "election_id",
+        ])
+        for eid, d in zip(ids, profiles):
+            ranks = np.asarray(d["ranks"], dtype=int)
+            marker = "s" if d["source"] == "pabulib" else "o"
+            label = "Krakow PB" if d["source"] == "pabulib" else str(d["culture"])
+            writer.writerow([
+                1, ranks.shape[1], ranks.shape[0], "precomputed", "{}",
+                "black", 1.0, marker, label, str(d["culture"]), eid,
+            ])
+
     for eid, d in zip(ids, profiles):
         write_soc_file(elections_dir / f"{eid}.soc", np.asarray(d["ranks"], dtype=int), str(d["culture"]))
 
-    dist = compute_positionwise_distance_matrix(profiles)
-    with (distances_dir / "positionwise.csv").open("w", encoding="utf-8", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["election_id"] + ids)
-        for eid, row in zip(ids, dist):
-            writer.writerow([eid] + [f"{float(x):.12g}" for x in row])
+    write_square_csv(distances_dir / "positionwise.csv", ids, dist)
 
     with (coordinates_dir / "mds.csv").open("w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
@@ -455,7 +501,7 @@ def export_map_of_elections_files(
         for eid, d in zip(ids, profiles):
             mis = d["mis"]
             wcrs = d.get("wcrs", {})
-            meta = min(wcrs.values()) if wcrs else ""
+            meta_wcr = min(wcrs.values()) if wcrs else ""
             writer.writerow([
                 eid,
                 f"{float(mis['egal']):.12g}",
@@ -467,7 +513,7 @@ def export_map_of_elections_files(
                 f"{float(wcrs.get('egal', np.nan)):.12g}" if wcrs else "",
                 f"{float(wcrs.get('util', np.nan)):.12g}" if wcrs else "",
                 f"{float(wcrs.get('nash', np.nan)):.12g}" if wcrs else "",
-                f"{float(meta):.12g}" if wcrs else "",
+                f"{float(meta_wcr):.12g}" if wcrs else "",
                 d.get("meta_pick", ""),
             ])
 
@@ -483,17 +529,17 @@ def export_map_of_elections_files(
                 f"{float(idx['polarization']):.12g}",
             ])
 
-    with (out_dir / "map.csv").open("w", encoding="utf-8", newline="") as f:
+    with (out_dir / "summary.csv").open("w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([
             "election_id", "culture", "source", "x", "y",
             "mu_egal", "mu_util", "mu_nash",
-            "diversity", "agreement", "polarization",
-            "meta_pick",
+            "diversity", "agreement", "polarization", "meta_pick",
         ])
         for eid, d, (x, y) in zip(ids, profiles, embed):
             writer.writerow([
-                eid, d["culture"], d["source"], f"{float(x):.12g}", f"{float(y):.12g}",
+                eid, d["culture"], d["source"],
+                f"{float(x):.12g}", f"{float(y):.12g}",
                 f"{float(d['mis']['egal']):.12g}",
                 f"{float(d['mis']['util']):.12g}",
                 f"{float(d['mis']['nash']):.12g}",
@@ -502,6 +548,139 @@ def export_map_of_elections_files(
                 f"{float(d['idx']['polarization']):.12g}",
                 d.get("meta_pick", ""),
             ])
+
+    return ids
+
+
+def make_mapel_vote_generator(rankings: np.ndarray) -> Callable[..., np.ndarray]:
+    """Wrap a fixed profile as a Mapel custom culture generator."""
+    fixed = np.asarray(rankings, dtype=int).copy()
+
+    def generator(num_candidates: int = N_ALTS, num_voters: int = N_VOTERS, **kwargs) -> np.ndarray:
+        # Mapel calls custom cultures with num_candidates and num_voters.
+        # We ignore these values because the profile is already fixed and exact.
+        return fixed.copy()
+
+    return generator
+
+
+def mapel_distance_from_original_metric(election_1, election_2) -> Tuple[float, object]:
+    """Custom Mapel distance matching the metric used in the paper script."""
+    votes_1 = np.asarray(election_1.votes, dtype=int)
+    votes_2 = np.asarray(election_2.votes, dtype=int)
+    dist = positionwise_distance(position_matrix(votes_1), position_matrix(votes_2))
+    return float(dist), None
+
+
+def register_mapel_feature(experiment, feature_id: str, lift_fn: Callable[[np.ndarray], np.ndarray], key: str) -> None:
+    """Register one misalignment feature in a Mapel experiment."""
+
+    def feature(election) -> float:
+        votes = np.asarray(election.votes, dtype=int)
+        return float(misalignment(lift_fn(votes))[key])
+
+    experiment.add_feature(feature_id, feature)
+
+
+def build_mapel_framework_experiment(
+    profiles: List[Dict[str, object]],
+    ids: List[str],
+    embed: np.ndarray,
+    dist: np.ndarray,
+) -> Dict[str, object]:
+    """Build the actual Mapel experiment object.
+
+    This is the part that makes the pipeline use the Map-of-Elections framework,
+    instead of only writing a standalone matplotlib/sklearn pipeline.  We use
+    Mapel's online experiment object, add each generated profile as a fixed
+    custom culture, register the exact positionwise distance as a custom Mapel
+    distance, and register the misalignment indices as Mapel features.
+
+    The coordinates used for the paper figures are then injected from the
+    original sklearn MDS computation.  This is deliberate: it preserves the
+    paper outputs exactly, while still exposing the elections/distances/features
+    through Mapel.
+    """
+    import mapel.elections as mapel
+
+    experiment = mapel.prepare_online_ordinal_experiment()
+    experiment.set_default_num_candidates(N_ALTS)
+    experiment.set_default_num_voters(N_VOTERS)
+
+    for eid, d in zip(ids, profiles):
+        votes = np.asarray(d["ranks"], dtype=int)
+        experiment.add_culture(eid, make_mapel_vote_generator(votes))
+        experiment.add_election(
+            culture_id=eid,
+            election_id=eid,
+            num_candidates=votes.shape[1],
+            num_voters=votes.shape[0],
+        )
+
+    experiment.add_distance("misalignment-positionwise", mapel_distance_from_original_metric)
+    experiment.compute_distances(distance_id="misalignment-positionwise")
+
+    # Register features in the framework.  These are the same feature values
+    # used by the paper figures/results.
+    register_mapel_feature(experiment, "mu_egal_borda", borda_utilities, "egal")
+    register_mapel_feature(experiment, "mu_util_borda", borda_utilities, "util")
+    register_mapel_feature(experiment, "mu_nash_borda", borda_utilities, "nash")
+    experiment.compute_feature(feature_id="mu_egal_borda")
+    experiment.compute_feature(feature_id="mu_util_borda")
+    experiment.compute_feature(feature_id="mu_nash_borda")
+
+    # Keep the original coordinates exactly.  Mapel has embedding_id='mds', but
+    # using a new embedding implementation could rotate/scale or otherwise change
+    # Figure 1/Figure 4.  Injecting coordinates keeps the outputs identical.
+    experiment.coordinates = {eid: [float(embed[i, 0]), float(embed[i, 1])] for i, eid in enumerate(ids)}
+
+    # Sanity check that the Mapel custom distance agrees with the stored matrix.
+    max_distance_error = 0.0
+    for i, eid_i in enumerate(ids):
+        for j, eid_j in enumerate(ids):
+            if i == j:
+                continue
+            # Mapel stores distances as a dictionary of dictionaries.
+            got = experiment.distances.get(eid_i, {}).get(eid_j)
+            if got is None:
+                got = experiment.distances.get(eid_j, {}).get(eid_i)
+            if got is not None:
+                max_distance_error = max(max_distance_error, abs(float(got) - float(dist[i, j])))
+
+    return {
+        "status": "ok",
+        "num_elections": len(ids),
+        "distance_id": "misalignment-positionwise",
+        "features": ["mu_egal_borda", "mu_util_borda", "mu_nash_borda"],
+        "max_distance_error_vs_original_matrix": float(max_distance_error),
+    }
+
+
+def run_mapel_framework_stage(profiles: List[Dict[str, object]], embed: np.ndarray) -> None:
+    """Prepare the Mapel experiment without changing the original outputs."""
+    dist = compute_positionwise_distance_matrix(profiles)
+    ids = export_mapel_offline_files(profiles, embed, dist)
+
+    status: Dict[str, object]
+    if not USE_MAPEL_FRAMEWORK:
+        status = {"status": "skipped", "reason": "USE_MAPEL_FRAMEWORK=False"}
+    else:
+        try:
+            status = build_mapel_framework_experiment(profiles, ids, embed, dist)
+        except Exception as exc:
+            status = {
+                "status": "failed",
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+                "hint": "Install mapel>=2.0.1 and mapel-elections, then rerun.",
+            }
+            if REQUIRE_MAPEL:
+                with (RESULTS_DIR / "mapel_framework_status.json").open("w", encoding="utf-8") as f:
+                    json.dump(status, f, indent=2)
+                raise
+
+    with (RESULTS_DIR / "mapel_framework_status.json").open("w", encoding="utf-8") as f:
+        json.dump(status, f, indent=2)
 
 
 # ---------------------------------------------------------------------------
@@ -834,9 +1013,6 @@ def main() -> None:
     print("Computing WCR meta-rule on all profiles...")
     wcr_results = compute_wcr(all_data)
 
-    print("Exporting Map-of-Elections files...")
-    export_map_of_elections_files(all_data, embed)
-
     print("Writing figures...")
     plot_figure1(all_data, embed)
     plot_figure2(synthetic_mu["util"], ord_indices, correlations)
@@ -919,10 +1095,13 @@ def main() -> None:
             rhos = [robustness[lift][cname]["rho"] for lift in ["Borda", "Positional", "Exponential"]]
             f.write(f"{cname:20s} | {rhos[0]:+.3f}   | {rhos[1]:+.3f}     | {rhos[2]:+.3f}      | {max(rhos) - min(rhos):.3f}\n")
 
+    print("Preparing Mapel / Map-of-Elections framework experiment...")
+    run_mapel_framework_stage(all_data, embed)
+
     print("Done.")
     print(f"Figures written to: {FIG_DIR}")
     print(f"Results written to: {RESULTS_DIR}")
-    print(f"Map-of-elections files written to: {MAPEL_DIR}")
+    print(f"Mapel experiment written to: {MAPEL_EXPERIMENT_DIR}")
 
 
 if __name__ == "__main__":
