@@ -19,9 +19,11 @@ Outputs are written to figures/ and results/.
 
 from __future__ import annotations
 
+import csv
 import json
 import math
 import os
+import re
 import warnings
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Tuple
@@ -44,8 +46,10 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data" / "krakow_pb"
 FIG_DIR = ROOT / "figures"
 RESULTS_DIR = ROOT / "results"
+MAPEL_DIR = ROOT / "mapel" / "misalignment"
 FIG_DIR.mkdir(exist_ok=True)
 RESULTS_DIR.mkdir(exist_ok=True)
+MAPEL_DIR.mkdir(parents=True, exist_ok=True)
 
 N_VOTERS = 50
 N_ALTS = 10
@@ -349,6 +353,155 @@ def compute_mds_embedding(profiles: List[Dict[str, object]]) -> np.ndarray:
         return MDS(n_components=2, dissimilarity="precomputed", random_state=GLOBAL_SEED, normalized_stress="auto").fit_transform(D)
     except TypeError:
         return MDS(n_components=2, dissimilarity="precomputed", random_state=GLOBAL_SEED).fit_transform(D)
+
+
+# ---------------------------------------------------------------------------
+# Map-of-elections framework export
+# ---------------------------------------------------------------------------
+
+def safe_id(text: str) -> str:
+    """Create a filesystem-safe election id."""
+    text = str(text).replace("=", "-").replace(" ", "_")
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", text).strip("_")
+
+
+def election_id(index: int, profile: Dict[str, object]) -> str:
+    """Stable id used in all MapEl-style output files."""
+    return f"{index:03d}_{safe_id(str(profile['culture']))}"
+
+
+def rankings_to_vote_counts(rankings: np.ndarray) -> Dict[Tuple[int, ...], int]:
+    """Compress rankings into vote multiplicities, as in .soc files."""
+    counts: Dict[Tuple[int, ...], int] = {}
+    for row in np.asarray(rankings, dtype=int):
+        vote = tuple(int(x) for x in row)
+        counts[vote] = counts.get(vote, 0) + 1
+    return counts
+
+
+def write_soc_file(path: Path, rankings: np.ndarray, title: str) -> None:
+    """Write one election in a PrefLib/MapEl-readable strict-order .soc format."""
+    rankings = np.asarray(rankings, dtype=int)
+    n, m = rankings.shape
+    counts = rankings_to_vote_counts(rankings)
+
+    with path.open("w", encoding="utf-8", newline="") as f:
+        f.write(f"# FILE NAME: {path.name}\n")
+        f.write(f"# TITLE: {title}\n")
+        f.write("# DATA TYPE: soc\n")
+        f.write(f"# NUMBER ALTERNATIVES: {m}\n")
+        f.write(f"# NUMBER VOTERS: {n}\n")
+        for a in range(m):
+            f.write(f"# ALTERNATIVE NAME {a}: c{a}\n")
+        f.write(f"{n}, {len(counts)}, {len(counts)}\n")
+        for vote, count in sorted(counts.items()):
+            f.write(f"{count}: " + ",".join(str(a) for a in vote) + "\n")
+
+
+def compute_positionwise_distance_matrix(profiles: List[Dict[str, object]]) -> np.ndarray:
+    """Distance matrix used by the map: positionwise distance with Hungarian matching."""
+    p_mats = [position_matrix(d["ranks"]) for d in profiles]
+    n = len(p_mats)
+    dist = np.zeros((n, n))
+    for i in range(n):
+        for j in range(i + 1, n):
+            dist[i, j] = dist[j, i] = positionwise_distance(p_mats[i], p_mats[j])
+    return dist
+
+
+def export_map_of_elections_files(
+    profiles: List[Dict[str, object]],
+    embed: np.ndarray,
+    out_dir: Path = MAPEL_DIR,
+) -> None:
+    """Export the experiment in the style of the Map of Elections pipeline.
+
+    This does not change the experiment. It only writes the generated elections,
+    the positionwise distance matrix, the 2D coordinates, and the feature values
+    used for coloring the map.
+    """
+    elections_dir = out_dir / "elections"
+    features_dir = out_dir / "features"
+    distances_dir = out_dir / "distances"
+    coordinates_dir = out_dir / "coordinates"
+    for directory in [elections_dir, features_dir, distances_dir, coordinates_dir]:
+        directory.mkdir(parents=True, exist_ok=True)
+
+    ids = [election_id(i, d) for i, d in enumerate(profiles)]
+
+    for eid, d in zip(ids, profiles):
+        write_soc_file(elections_dir / f"{eid}.soc", np.asarray(d["ranks"], dtype=int), str(d["culture"]))
+
+    dist = compute_positionwise_distance_matrix(profiles)
+    with (distances_dir / "positionwise.csv").open("w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["election_id"] + ids)
+        for eid, row in zip(ids, dist):
+            writer.writerow([eid] + [f"{float(x):.12g}" for x in row])
+
+    with (coordinates_dir / "mds.csv").open("w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["election_id", "x", "y"])
+        for eid, (x, y) in zip(ids, embed):
+            writer.writerow([eid, f"{float(x):.12g}", f"{float(y):.12g}"])
+
+    with (features_dir / "misalignment.csv").open("w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            "election_id", "mu_egal", "mu_util", "mu_nash",
+            "best_egal_alt", "best_util_alt", "best_nash_alt",
+            "wcr_egal", "wcr_util", "wcr_nash", "wcr_meta", "meta_pick",
+        ])
+        for eid, d in zip(ids, profiles):
+            mis = d["mis"]
+            wcrs = d.get("wcrs", {})
+            meta = min(wcrs.values()) if wcrs else ""
+            writer.writerow([
+                eid,
+                f"{float(mis['egal']):.12g}",
+                f"{float(mis['util']):.12g}",
+                f"{float(mis['nash']):.12g}",
+                int(mis["best_egal_alt"]),
+                int(mis["best_util_alt"]),
+                int(mis["best_nash_alt"]),
+                f"{float(wcrs.get('egal', np.nan)):.12g}" if wcrs else "",
+                f"{float(wcrs.get('util', np.nan)):.12g}" if wcrs else "",
+                f"{float(wcrs.get('nash', np.nan)):.12g}" if wcrs else "",
+                f"{float(meta):.12g}" if wcrs else "",
+                d.get("meta_pick", ""),
+            ])
+
+    with (features_dir / "ordinal_indices.csv").open("w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["election_id", "diversity", "agreement", "polarization"])
+        for eid, d in zip(ids, profiles):
+            idx = d["idx"]
+            writer.writerow([
+                eid,
+                f"{float(idx['diversity']):.12g}",
+                f"{float(idx['agreement']):.12g}",
+                f"{float(idx['polarization']):.12g}",
+            ])
+
+    with (out_dir / "map.csv").open("w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            "election_id", "culture", "source", "x", "y",
+            "mu_egal", "mu_util", "mu_nash",
+            "diversity", "agreement", "polarization",
+            "meta_pick",
+        ])
+        for eid, d, (x, y) in zip(ids, profiles, embed):
+            writer.writerow([
+                eid, d["culture"], d["source"], f"{float(x):.12g}", f"{float(y):.12g}",
+                f"{float(d['mis']['egal']):.12g}",
+                f"{float(d['mis']['util']):.12g}",
+                f"{float(d['mis']['nash']):.12g}",
+                f"{float(d['idx']['diversity']):.12g}",
+                f"{float(d['idx']['agreement']):.12g}",
+                f"{float(d['idx']['polarization']):.12g}",
+                d.get("meta_pick", ""),
+            ])
 
 
 # ---------------------------------------------------------------------------
@@ -681,6 +834,9 @@ def main() -> None:
     print("Computing WCR meta-rule on all profiles...")
     wcr_results = compute_wcr(all_data)
 
+    print("Exporting Map-of-Elections files...")
+    export_map_of_elections_files(all_data, embed)
+
     print("Writing figures...")
     plot_figure1(all_data, embed)
     plot_figure2(synthetic_mu["util"], ord_indices, correlations)
@@ -766,6 +922,7 @@ def main() -> None:
     print("Done.")
     print(f"Figures written to: {FIG_DIR}")
     print(f"Results written to: {RESULTS_DIR}")
+    print(f"Map-of-elections files written to: {MAPEL_DIR}")
 
 
 if __name__ == "__main__":
