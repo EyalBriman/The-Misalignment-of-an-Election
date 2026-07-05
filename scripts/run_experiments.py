@@ -14,7 +14,7 @@ It uses:
   - 8 Krakow participatory-budgeting profiles from Pabulib, downsampled
     reproducibly to 50 voters x 10 projects.
 
-Outputs are written to figures/ and results/.
+Outputs are written to figures/ and results/.  The generated elections, distances, coordinates, and features are also exported under experiments/misalignment/ in a Map-of-Elections/Mapel-compatible layout.
 """
 
 from __future__ import annotations
@@ -54,7 +54,7 @@ MAPEL_EXPERIMENT_ID = "misalignment"
 MAPEL_ROOT = ROOT / "experiments"
 MAPEL_EXPERIMENT_DIR = MAPEL_ROOT / MAPEL_EXPERIMENT_ID
 USE_MAPEL_FRAMEWORK = True
-REQUIRE_MAPEL = True
+REQUIRE_MAPEL = False
 
 FIG_DIR.mkdir(exist_ok=True)
 RESULTS_DIR.mkdir(exist_ok=True)
@@ -358,10 +358,17 @@ def compute_mds_embedding(profiles: List[Dict[str, object]]) -> np.ndarray:
     for i in range(n):
         for j in range(i + 1, n):
             D[i, j] = D[j, i] = positionwise_distance(P_mats[i], P_mats[j])
+    kwargs = dict(
+        n_components=2,
+        dissimilarity="precomputed",
+        random_state=GLOBAL_SEED,
+        n_init=4,
+        init="random",
+    )
     try:
-        return MDS(n_components=2, dissimilarity="precomputed", random_state=GLOBAL_SEED, normalized_stress="auto").fit_transform(D)
+        return MDS(normalized_stress="auto", **kwargs).fit_transform(D)
     except TypeError:
-        return MDS(n_components=2, dissimilarity="precomputed", random_state=GLOBAL_SEED).fit_transform(D)
+        return MDS(**kwargs).fit_transform(D)
 
 
 def compute_positionwise_distance_matrix(profiles: List[Dict[str, object]]) -> np.ndarray:

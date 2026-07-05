@@ -5,17 +5,18 @@ This repository contains the empirical replication code for:
 > **The Misalignment of an Election: Theoretical Foundations and Empirical Landscape**  
 > Eyal Briman and Nimrod Talmon, EUMAS 2026.
 
-The code reproduces the empirical part of the paper: synthetic elections, Krakow participatory-budgeting instances from Pabulib, the map-of-elections embedding, cardinal misalignment indices, robustness across cardinal lifts, and the worst-case regret meta-rule.
+The pipeline reproduces the empirical part of the paper: synthetic elections, Krakow participatory-budgeting elections from Pabulib, the map-of-elections embedding, the three cardinal misalignment indices, robustness across cardinal lifts, and the worst-case-regret meta-rule.
+
+The code is now organized around a Map-of-Elections/Mapel-compatible experiment layout. The original paper outputs are preserved, while the generated elections, distances, coordinates, and features are also exported to `experiments/misalignment/`.
 
 ## Repository structure
 
 ```text
 .
 ├── README.md
-├── LICENSE
-├── DATA_LICENSE.md
-├── CITATION.bib
-├── CITATION.cff
+├── REPRODUCIBILITY.md
+├── MAPEL_INTEGRATION.md
+├── VALIDATION.md
 ├── requirements.txt
 ├── scripts/
 │   └── run_experiments.py
@@ -30,29 +31,50 @@ The code reproduces the empirical part of the paper: synthetic elections, Krakow
 │       ├── Poland_Krakow_2023.pb
 │       ├── Poland_Krakow_2024.pb
 │       └── Poland_Krakow_2025.pb
-├── figures/        # generated figures are written here
-└── results/        # generated JSON/tables are written here
+├── experiments/
+│   └── misalignment/        # generated Map-of-Elections/Mapel-compatible experiment
+├── figures/                 # generated paper figures
+└── results/                 # generated numeric summaries
 ```
 
-## What the script generates
+## What running the script produces
 
-Running the script generates exactly the empirical artifacts described in the paper:
+From the repository root, run:
 
-| Paper figure | Output file |
+```bash
+python scripts/run_experiments.py
+```
+
+The script writes the same paper outputs as the standalone version:
+
+| Paper artifact | Output file |
 |---|---|
 | Figure 1, three misalignment indices on the map of elections | `figures/figure1_misalignment_map.pdf` |
 | Figure 2, utilitarian misalignment vs. ordinal indices | `figures/figure2_util_vs_ordinal.pdf` |
 | Figure 3, robustness across cardinal lifts | `figures/figure3_lift_robustness.pdf` |
-| Figure 4, WCR meta-rule evaluation | `figures/figure4_wcr_meta_rule.pdf` |
+| Figure 4, worst-case-regret meta-rule evaluation | `figures/figure4_wcr_meta_rule.pdf` |
+| Numerical summaries | `results/numbers.json` |
+| Robustness table | `results/robustness_table.txt` |
 
-The script also writes:
+It also writes the Map-of-Elections/Mapel-compatible experiment files:
 
 ```text
-results/numbers.json
-results/robustness_table.txt
+experiments/misalignment/
+├── map.csv
+├── summary.csv
+├── elections/
+│   └── *.soc
+├── distances/
+│   └── positionwise.csv
+├── coordinates/
+│   └── mds.csv
+├── features/
+│   ├── misalignment.csv
+│   └── ordinal_indices.csv
+└── matrices/
 ```
 
-These files contain the numerical summaries used in the prose: misalignment ranges, correlation statistics, Pabulib downsampling records, robustness values, and WCR summaries.
+The `results/mapel_framework_status.json` file records whether the optional live Mapel API stage was available in the local Python environment.
 
 ## Installation
 
@@ -60,29 +82,42 @@ Python 3.10 or newer is recommended.
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+source .venv/bin/activate       # Windows Git Bash
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## Reproducing the experiments
+On Windows PowerShell, activate with:
 
-From the repository root:
-
-```bash
-python scripts/run_experiments.py
+```powershell
+.venv\Scripts\Activate.ps1
 ```
 
-The script uses fixed random seeds. The synthetic population uses `seed = 42`; each Krakow instance is downsampled with `seed = 42` to 50 voters and 10 projects.
+## What is preserved from the original script
+
+The following computations are intentionally unchanged:
+
+- synthetic population generation with seed 42;
+- Krakow Pabulib parsing and downsampling with seed 42;
+- Borda, positional, and exponential cardinal lifts;
+- egalitarian, utilitarian, and Nash misalignment;
+- diversity, agreement, and polarization descriptors;
+- positionwise distance with Hungarian matching;
+- MDS map used for the paper figures;
+- correlation/robustness analysis;
+- worst-case-regret meta-rule.
+
+The Mapel-compatible files are exported from these same objects, so the framework data and the paper figures refer to the same elections, distances, coordinates, and feature values.
 
 ## Data
 
-The eight real participatory-budgeting instances in `data/krakow_pb/` are Krakow municipal PB files from **Pabulib**. Pabulib stores participatory-budgeting data in the `.pb` format with `META`, `PROJECTS`, and `VOTES` sections. See `data/README.md` and `DATA_LICENSE.md` for source and licensing notes.
+The eight real participatory-budgeting instances in `data/krakow_pb/` are Krakow municipal PB files from **Pabulib**. They are downsampled reproducibly to 50 voters and 10 projects. See `data/README.md` and `DATA_LICENSE.md` for source and licensing notes.
 
 When using the Pabulib data, cite the Pabulib data/tools paper and the Pabulib format/library paper listed in `CITATION.bib`.
 
-## Notes on scope
+## Notes
 
-This repository intentionally contains only the empirical pipeline described in the paper. It does not include unrelated simulations or exploratory figures.
+The live Mapel API is optional at runtime. The script always exports the Map-of-Elections-compatible folder structure. If Mapel is installed, it additionally tries to build the corresponding online Mapel experiment object and records the result in `results/mapel_framework_status.json`. This keeps the replication robust while preserving the exact paper outputs.
 
 ## License
 

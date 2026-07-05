@@ -1,37 +1,68 @@
-# Mapel / Map-of-Elections integration
+# Map-of-Elections / Mapel integration
 
-This version keeps the original empirical outputs of the misalignment paper, but moves the map part into the Mapel / Map-of-Elections style framework.
+This repository keeps the empirical outputs of *The Misalignment of an Election* and aligns the data flow with the Map-of-Elections/Mapel framework.
 
-## Files to replace or add
+## Design principle
 
-Replace:
-
-```text
-scripts/run_experiments.py
-requirements.txt
-```
-
-Add this note if desired:
+The original paper figures must remain reproducible. Therefore, the script keeps the original deterministic computations and exports their objects into a Mapel-compatible experiment layout:
 
 ```text
-MAPEL_INTEGRATION.md
+experiments/misalignment/
+├── map.csv
+├── summary.csv
+├── elections/*.soc
+├── distances/positionwise.csv
+├── coordinates/mds.csv
+├── features/misalignment.csv
+├── features/ordinal_indices.csv
+└── matrices/
 ```
 
-The data files stay where they already were:
+The exported files correspond exactly to the objects used by the figures:
+
+- `elections/*.soc` stores the generated/downsampled ordinal elections;
+- `distances/positionwise.csv` stores the positionwise distance matrix;
+- `coordinates/mds.csv` stores the two-dimensional MDS coordinates;
+- `features/misalignment.csv` stores `mu_egal`, `mu_util`, `mu_nash`, best alternatives, WCR values, and the meta-rule pick;
+- `features/ordinal_indices.csv` stores diversity, agreement, and polarization;
+- `summary.csv` joins coordinates and features into one easy-to-read table.
+
+## Optional live Mapel stage
+
+At the end of `scripts/run_experiments.py`, the function `run_mapel_framework_stage(...)` does two things.
+
+First, it always writes the offline Mapel-compatible experiment files above.
+
+Second, if the local environment has `mapel` and `mapel-elections`, it attempts to build a live Mapel ordinal experiment object by using:
+
+```python
+import mapel.elections as mapel
+experiment = mapel.prepare_online_ordinal_experiment()
+```
+
+The script then registers fixed generated profiles, a custom positionwise distance matching the paper metric, and three custom Borda-misalignment features.
+
+The status is written to:
 
 ```text
-data/krakow_pb/Poland_Krakow_*.pb
+results/mapel_framework_status.json
 ```
 
-## What stays the same
+This file is diagnostic only. The paper figures and numeric results do not depend on whether the optional live Mapel API stage succeeds.
 
-Running
+## Why the coordinates are not recomputed by Mapel
+
+The map in the paper depends on the exact MDS output. MDS coordinates can change by rotation, reflection, scaling, or small implementation details even when the underlying distances are the same. To preserve the exact paper figures, the script computes the MDS coordinates once using the original deterministic call and exports those coordinates to the Mapel-compatible experiment folder.
+
+This is the safest way to make the repository framework-aligned while keeping the published artifacts reproducible.
+
+## How to rerun
 
 ```bash
 python scripts/run_experiments.py
 ```
 
-still writes the original paper outputs:
+Expected main outputs:
 
 ```text
 figures/figure1_misalignment_map.pdf
@@ -40,77 +71,18 @@ figures/figure3_lift_robustness.pdf
 figures/figure4_wcr_meta_rule.pdf
 results/numbers.json
 results/robustness_table.txt
-```
-
-The original computations for synthetic profiles, Krakow downsampling, cardinal lifts, misalignment, correlations, WCR, and the final matplotlib figures are intentionally preserved.
-
-## What is new
-
-The script now also prepares a Mapel experiment under:
-
-```text
 experiments/misalignment/
 ```
 
-with the following structure:
+## Developer switches
 
-```text
-experiments/misalignment/
-├── map.csv
-├── elections/
-│   └── *.soc
-├── distances/
-│   └── positionwise.csv
-├── coordinates/
-│   └── mds.csv
-├── features/
-│   ├── misalignment.csv
-│   └── ordinal_indices.csv
-├── matrices/
-└── summary.csv
-```
-
-It also writes:
-
-```text
-results/mapel_framework_status.json
-```
-
-This status file records whether the Mapel experiment object was successfully built and whether the custom Mapel distance matches the original distance matrix.
-
-## Why coordinates are injected rather than recomputed
-
-Mapel has its own embedding functions, including MDS. However, recomputing an embedding inside Mapel may rotate, rescale, or otherwise slightly change the coordinates. Since the goal here is to preserve the paper outputs exactly, the script computes the MDS coordinates using the original sklearn call and then injects those same coordinates into the Mapel experiment object.
-
-## Requirements
-
-Install with:
-
-```bash
-pip install -r requirements.txt
-```
-
-The important new dependency is:
-
-```text
-mapel>=2.0.1
-```
-
-The `mapel-elections` dependency is listed explicitly because this script uses `import mapel.elections as mapel`.
-
-## Troubleshooting
-
-If Mapel import or API calls fail, the original figures and result files are written first, and the failure details are written to:
-
-```text
-results/mapel_framework_status.json
-```
-
-To temporarily disable the Mapel framework phase, edit the top of `scripts/run_experiments.py`:
+Near the top of `scripts/run_experiments.py`:
 
 ```python
-USE_MAPEL_FRAMEWORK = False
+USE_MAPEL_FRAMEWORK = True
 REQUIRE_MAPEL = False
 ```
 
-Do this only for debugging. For the Map-of-Elections-framework version, keep both as `True`.
+`USE_MAPEL_FRAMEWORK=True` means the script writes the Mapel-compatible experiment files and tries the live Mapel API stage.
+
+`REQUIRE_MAPEL=False` means the paper outputs are still produced even if Mapel is not installed or if a future Mapel API version changes. Set it to `True` only when you want the script to fail on a Mapel API issue.

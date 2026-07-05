@@ -14,7 +14,9 @@ figures/*.pdf
 figures/*.png
 results/*.json
 results/*.txt
+experiments/misalignment/
 
 # Keep directories
 !figures/.gitkeep
 !results/.gitkeep
+!experiments/.gitkeep

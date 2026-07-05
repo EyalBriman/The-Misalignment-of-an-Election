@@ -1,11 +1,129 @@
 {
-  "n_synthetic": 283,
-  "n_pabulib_krakow": 8,
-  "pabulib_dimensions": {
+  "configuration": {
+    "seed": 42,
     "n_voters": 50,
-    "n_alts": 10,
-    "seed": 42
+    "n_alternatives": 10,
+    "n_synthetic": 283,
+    "n_pabulib_krakow": 8,
+    "pabulib_downsampling": {
+      "n_voters": 50,
+      "n_projects": 10,
+      "seed": 42
+    }
   },
+  "misalignment_ranges_synthetic_borda": {
+    "egal": {
+      "min": 0.0,
+      "max": 1.0,
+      "median": 0.5555555555555556,
+      "mean": 0.6399685904986259,
+      "std": 0.24621736133643543
+    },
+    "util": {
+      "min": 0.0,
+      "max": 0.468888888888889,
+      "median": 0.308888888888889,
+      "mean": 0.2735767569689831,
+      "std": 0.1352260378124429
+    },
+    "nash": {
+      "min": 0.0,
+      "max": 0.9913534719402324,
+      "median": 0.3474398035150523,
+      "mean": 0.385829516107181,
+      "std": 0.26547098013163634
+    }
+  },
+  "krakow_summary": [
+    {
+      "year": "2018",
+      "vote_type": "ordinal",
+      "original_num_votes": 32958,
+      "original_num_projects": 123,
+      "misalignment": {
+        "egal": 0.2222222222222222,
+        "util": 0.08888888888888902,
+        "nash": 0.09221359572850973
+      }
+    },
+    {
+      "year": "2019",
+      "vote_type": "ordinal",
+      "original_num_votes": 50004,
+      "original_num_projects": 118,
+      "misalignment": {
+        "egal": 0.33333333333333337,
+        "util": 0.10222222222222288,
+        "nash": 0.10653650627241185
+      }
+    },
+    {
+      "year": "2020",
+      "vote_type": "ordinal",
+      "original_num_votes": 42280,
+      "original_num_projects": 97,
+      "misalignment": {
+        "egal": 0.2222222222222222,
+        "util": 0.10888888888888915,
+        "nash": 0.11209632278329495
+      }
+    },
+    {
+      "year": "2021",
+      "vote_type": "ordinal",
+      "original_num_votes": 51229,
+      "original_num_projects": 99,
+      "misalignment": {
+        "egal": 0.33333333333333337,
+        "util": 0.10666666666666669,
+        "nash": 0.11222183248298523
+      }
+    },
+    {
+      "year": "2022",
+      "vote_type": "ordinal",
+      "original_num_votes": 42965,
+      "original_num_projects": 93,
+      "misalignment": {
+        "egal": 0.33333333333333337,
+        "util": 0.09333333333333338,
+        "nash": 0.10023959445199682
+      }
+    },
+    {
+      "year": "2023",
+      "vote_type": "ordinal",
+      "original_num_votes": 64907,
+      "original_num_projects": 155,
+      "misalignment": {
+        "egal": 0.33333333333333337,
+        "util": 0.08444444444444454,
+        "nash": 0.09172140459200206
+      }
+    },
+    {
+      "year": "2024",
+      "vote_type": "ordinal",
+      "original_num_votes": 65101,
+      "original_num_projects": 119,
+      "misalignment": {
+        "egal": 0.33333333333333337,
+        "util": 0.09555555555555584,
+        "nash": 0.09926168383069178
+      }
+    },
+    {
+      "year": "2025",
+      "vote_type": "ordinal",
+      "original_num_votes": 77724,
+      "original_num_projects": 142,
+      "misalignment": {
+        "egal": 0.2222222222222222,
+        "util": 0.086666666666667,
+        "nash": 0.09064565220220056
+      }
+    }
+  ],
   "pabulib_sampling": {
     "2018": {
       "voter_indices": [
@@ -552,313 +670,211 @@
       "sampled_voters": 50
     }
   },
-  "correlations_with_stats": {
+  "correlations_with_stats_synthetic": {
     "egal_diversity": {
-      "rho": 0.8633807095911192,
-      "p_value": 1.8083784675224138e-85,
-      "ci_low": 0.8199089967127297,
-      "ci_high": 0.8966523091821799,
+      "rho": 0.7466542917420875,
+      "p_value": 1.1342334403334442e-51,
+      "ci_low": 0.6712402478278872,
+      "ci_high": 0.814661120244012,
       "significance": "***"
     },
     "egal_agreement": {
-      "rho": -0.828732788210433,
-      "p_value": 8.345036892709774e-73,
-      "ci_low": -0.8584877083768178,
-      "ci_high": -0.7811714764451869,
+      "rho": -0.7679457495974981,
+      "p_value": 2.663929525630075e-56,
+      "ci_low": -0.8119109649924038,
+      "ci_high": -0.696725914864239,
       "significance": "***"
     },
     "egal_polarization": {
-      "rho": -0.3640017249037508,
-      "p_value": 2.714095721871415e-10,
-      "ci_low": -0.5004298085371315,
-      "ci_high": -0.2320981494964785,
-      "significance": "***"
+      "rho": 0.00028177674549826346,
+      "p_value": 0.9962346063610812,
+      "ci_low": -0.15770725190636725,
+      "ci_high": 0.12729628508896712,
+      "significance": "n.s."
     },
     "util_diversity": {
-      "rho": 0.63358317378066,
-      "p_value": 3.614335910660229e-33,
-      "ci_low": 0.5443670716730206,
-      "ci_high": 0.6992212143129699,
+      "rho": 0.5894132285192962,
+      "p_value": 7.262956851652083e-28,
+      "ci_low": 0.48893475632161215,
+      "ci_high": 0.6571207007410551,
       "significance": "***"
     },
     "util_agreement": {
-      "rho": -0.9418722535153207,
-      "p_value": 3.925504957638404e-135,
-      "ci_low": -0.9550982139014551,
-      "ci_high": -0.9223916844801792,
+      "rho": -0.9343577230776804,
+      "p_value": 6.014294056978636e-128,
+      "ci_low": -0.9531313132707173,
+      "ci_high": -0.9103696571093693,
       "significance": "***"
     },
     "util_polarization": {
-      "rho": -0.06117415030563799,
-      "p_value": 0.30512050202492985,
-      "ci_low": -0.2048465053238584,
-      "ci_high": 0.09647380828433928,
-      "significance": "n.s."
+      "rho": 0.27351308423210974,
+      "p_value": 3.009159019217899e-06,
+      "ci_low": 0.13130426505798196,
+      "ci_high": 0.40842085435723074,
+      "significance": "***"
     },
     "nash_diversity": {
-      "rho": 0.7384944867382496,
-      "p_value": 5.104976003534319e-50,
-      "ci_low": 0.6718114896990409,
-      "ci_high": 0.795466308314877,
+      "rho": 0.6227227031797052,
+      "p_value": 8.723001206399626e-32,
+      "ci_low": 0.5394358967083002,
+      "ci_high": 0.7051907485592072,
       "significance": "***"
     },
     "nash_agreement": {
-      "rho": -0.9097725621215472,
-      "p_value": 2.636011950180371e-109,
-      "ci_low": -0.9312677604642431,
-      "ci_high": -0.8861284998392611,
+      "rho": -0.9075576772656803,
+      "p_value": 6.775891605643638e-108,
+      "ci_low": -0.9315577647059538,
+      "ci_high": -0.8732510999636062,
       "significance": "***"
     },
     "nash_polarization": {
-      "rho": -0.21865806128819,
-      "p_value": 0.00020966678116100248,
-      "ci_low": -0.3599024013751477,
-      "ci_high": -0.05979047699454602,
+      "rho": 0.2062945444414085,
+      "p_value": 0.0004781728077671648,
+      "ci_low": 0.04677716824261977,
+      "ci_high": 0.3566472208453136,
       "significance": "***"
     }
   },
-  "robustness": {
+  "robustness_synthetic": {
     "Borda": {
       "egal_diversity": {
-        "rho": 0.8633807095911192,
-        "p_value": 1.8083784675224138e-85
+        "rho": 0.7466542917420875,
+        "p_value": 1.1342334403334442e-51
       },
       "egal_agreement": {
-        "rho": -0.828732788210433,
-        "p_value": 8.345036892709774e-73
+        "rho": -0.7679457495974981,
+        "p_value": 2.663929525630075e-56
       },
       "egal_polarization": {
-        "rho": -0.3640017249037508,
-        "p_value": 2.714095721871415e-10
+        "rho": 0.00028177674549826346,
+        "p_value": 0.9962346063610812
       },
       "util_diversity": {
-        "rho": 0.63358317378066,
-        "p_value": 3.614335910660229e-33
+        "rho": 0.5894132285192962,
+        "p_value": 7.262956851652083e-28
       },
       "util_agreement": {
-        "rho": -0.9418722535153207,
-        "p_value": 3.925504957638404e-135
+        "rho": -0.9343577230776804,
+        "p_value": 6.014294056978636e-128
       },
       "util_polarization": {
-        "rho": -0.06117415030563799,
-        "p_value": 0.30512050202492985
+        "rho": 0.27351308423210974,
+        "p_value": 3.009159019217899e-06
       },
       "nash_diversity": {
-        "rho": 0.7384944867382496,
-        "p_value": 5.104976003534319e-50
+        "rho": 0.6227227031797052,
+        "p_value": 8.723001206399626e-32
       },
       "nash_agreement": {
-        "rho": -0.9097725621215472,
-        "p_value": 2.636011950180371e-109
+        "rho": -0.9075576772656803,
+        "p_value": 6.775891605643638e-108
       },
       "nash_polarization": {
-        "rho": -0.21865806128819,
-        "p_value": 0.00020966678116100248
+        "rho": 0.2062945444414085,
+        "p_value": 0.0004781728077671648
       }
     },
     "Positional": {
       "egal_diversity": {
-        "rho": 0.8633807095911192,
-        "p_value": 1.8083784675224138e-85
+        "rho": 0.7466542917420875,
+        "p_value": 1.1342334403334442e-51
       },
       "egal_agreement": {
-        "rho": -0.828732788210433,
-        "p_value": 8.345036892709774e-73
+        "rho": -0.7679457495974981,
+        "p_value": 2.663929525630075e-56
       },
       "egal_polarization": {
-        "rho": -0.3640017249037508,
-        "p_value": 2.714095721871415e-10
+        "rho": 0.00028177674549826346,
+        "p_value": 0.9962346063610812
       },
       "util_diversity": {
-        "rho": 0.5591963425355486,
-        "p_value": 1.110039299871792e-24
+        "rho": 0.5892909946464105,
+        "p_value": 7.493276446839724e-28
       },
       "util_agreement": {
-        "rho": -0.6745136793696994,
-        "p_value": 6.510325319580002e-39
+        "rho": -0.710871535141626,
+        "p_value": 7.485643644206898e-45
       },
       "util_polarization": {
-        "rho": -0.13598139500415302,
-        "p_value": 0.02213318879382512
+        "rho": 0.08511055665498292,
+        "p_value": 0.15328134747887054
       },
       "nash_diversity": {
-        "rho": 0.6129634639838857,
-        "p_value": 1.3729340024593709e-30
+        "rho": 0.5836285262671064,
+        "p_value": 3.1369598692073583e-27
       },
       "nash_agreement": {
-        "rho": -0.8357466053995053,
-        "p_value": 3.980354116494505e-75
+        "rho": -0.843979643460187,
+        "p_value": 5.382127305492963e-78
       },
       "nash_polarization": {
-        "rho": -0.1356002602796485,
-        "p_value": 0.022512889914100727
+        "rho": 0.17577756346667206,
+        "p_value": 0.0030063830193974364
       }
     },
     "Exponential": {
       "egal_diversity": {
-        "rho": 0.8633807095911192,
-        "p_value": 1.8083784675224138e-85
+        "rho": 0.7466542917420875,
+        "p_value": 1.1342334403334442e-51
       },
       "egal_agreement": {
-        "rho": -0.828732788210433,
-        "p_value": 8.345036892709774e-73
+        "rho": -0.7679457495974981,
+        "p_value": 2.663929525630075e-56
       },
       "egal_polarization": {
-        "rho": -0.3640017249037508,
-        "p_value": 2.714095721871415e-10
+        "rho": 0.00028177674549826346,
+        "p_value": 0.9962346063610812
       },
       "util_diversity": {
-        "rho": 0.5354769718344863,
-        "p_value": 2.1204365430254956e-22
+        "rho": 0.5760188337798405,
+        "p_value": 2.057290240314608e-26
       },
       "util_agreement": {
-        "rho": -0.6564889558173148,
-        "p_value": 2.8420347341515556e-36
+        "rho": -0.7001613123336308,
+        "p_value": 5.211964948736903e-43
       },
       "util_polarization": {
-        "rho": -0.11460576208248567,
-        "p_value": 0.05413134562376039
+        "rho": 0.09615195997046254,
+        "p_value": 0.10650375915479132
       },
       "nash_diversity": {
-        "rho": 0.6337980764253408,
-        "p_value": 3.389321272270421e-33
+        "rho": 0.5897320502687704,
+        "p_value": 6.694565530795384e-28
       },
       "nash_agreement": {
-        "rho": -0.9419531015588665,
-        "p_value": 3.2469181247503e-135
+        "rho": -0.9344100700755893,
+        "p_value": 5.396755251502497e-128
       },
       "nash_polarization": {
-        "rho": -0.06143554788763421,
-        "p_value": 0.30305470680298136
+        "rho": 0.27316490120184345,
+        "p_value": 3.1010379472295537e-06
       }
     }
   },
-  "pabulib_summary": [
-    {
-      "year": "2018",
-      "misalignment": {
-        "egal": 0.2222222222222222,
-        "util": 0.08888888888888902,
-        "nash": 0.09221359572850962,
-        "best_egal_alt": 0,
-        "best_util_alt": 0,
-        "best_nash_alt": 0
-      },
-      "sampled_voters": 50,
-      "sampled_projects": 10,
-      "original_voters": 32958
-    },
-    {
-      "year": "2019",
-      "misalignment": {
-        "egal": 0.33333333333333337,
-        "util": 0.10222222222222288,
-        "nash": 0.10653650627241185,
-        "best_egal_alt": 0,
-        "best_util_alt": 0,
-        "best_nash_alt": 0
-      },
-      "sampled_voters": 50,
-      "sampled_projects": 10,
-      "original_voters": 50004
-    },
-    {
-      "year": "2020",
-      "misalignment": {
-        "egal": 0.2222222222222222,
-        "util": 0.10888888888888915,
-        "nash": 0.11209632278329495,
-        "best_egal_alt": 0,
-        "best_util_alt": 0,
-        "best_nash_alt": 0
-      },
-      "sampled_voters": 50,
-      "sampled_projects": 10,
-      "original_voters": 42280
-    },
-    {
-      "year": "2021",
-      "misalignment": {
-        "egal": 0.33333333333333337,
-        "util": 0.10666666666666669,
-        "nash": 0.11222183248298523,
-        "best_egal_alt": 0,
-        "best_util_alt": 0,
-        "best_nash_alt": 0
-      },
-      "sampled_voters": 50,
-      "sampled_projects": 10,
-      "original_voters": 51229
-    },
-    {
-      "year": "2022",
-      "misalignment": {
-        "egal": 0.33333333333333337,
-        "util": 0.09333333333333338,
-        "nash": 0.10023959445199682,
-        "best_egal_alt": 0,
-        "best_util_alt": 0,
-        "best_nash_alt": 0
-      },
-      "sampled_voters": 50,
-      "sampled_projects": 10,
-      "original_voters": 42965
-    },
-    {
-      "year": "2023",
-      "misalignment": {
-        "egal": 0.33333333333333337,
-        "util": 0.08444444444444454,
-        "nash": 0.09172140459200206,
-        "best_egal_alt": 0,
-        "best_util_alt": 0,
-        "best_nash_alt": 0
-      },
-      "sampled_voters": 50,
-      "sampled_projects": 10,
-      "original_voters": 64907
-    },
-    {
-      "year": "2024",
-      "misalignment": {
-        "egal": 0.33333333333333337,
-        "util": 0.09555555555555584,
-        "nash": 0.09926168383069178,
-        "best_egal_alt": 0,
-        "best_util_alt": 0,
-        "best_nash_alt": 0
-      },
-      "sampled_voters": 50,
-      "sampled_projects": 10,
-      "original_voters": 65101
-    },
-    {
-      "year": "2025",
-      "misalignment": {
-        "egal": 0.2222222222222222,
-        "util": 0.086666666666667,
-        "nash": 0.09064565220220056,
-        "best_egal_alt": 0,
-        "best_util_alt": 0,
-        "best_nash_alt": 0
-      },
-      "sampled_voters": 50,
-      "sampled_projects": 10,
-      "original_voters": 77724
-    }
-  ],
-  "wcr_stats": {
+  "disagreement_sets_synthetic": {
+    "low_polarization_high_util_misalignment": 35,
+    "high_polarization_low_util_misalignment": 6,
+    "n_profiles": 283
+  },
+  "wcr_all_profiles": {
     "medians": {
-      "egal": 0.016938269031620434,
-      "util": 3.3306690738754696e-16,
-      "nash": 3.3306690738754696e-16,
-      "meta": 3.3306690738754696e-16
+      "egal": 0.009124284710688713,
+      "util": 2.220446049250313e-16,
+      "nash": 2.220446049250313e-16,
+      "meta": 2.220446049250313e-16
     },
     "p90": {
-      "egal": 0.12577777777777785,
-      "util": 0.2222222222222222,
-      "nash": 0.09333333333333346,
-      "meta": 0.052712384022215945
-    }
+      "egal": 0.1377777777777779,
+      "util": 0.4311387698057886,
+      "nash": 0.11111111111111116,
+      "meta": 0.0933333333333336
+    },
+    "meta_picks": {
+      "egal": 192,
+      "util": 67,
+      "nash": 32
+    },
+    "p90_reduction_vs_worst_base": 4.619343962204864,
+    "p90_reduction_vs_best_base": 1.1904761904761876
   }
 }
